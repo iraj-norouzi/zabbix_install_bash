@@ -1,0 +1,1 @@
+# zabbix_install_bash
