@@ -1,0 +1,30 @@
+# License: CC0 1.0 or newer
+# https://creativecommons.org/publicdomain/zero/1.0/
+
+# You can download this script here: https://gist.github.com/vazhnov/fcb487e6ea432fec056793ef710b5a28
+
+wget "http://repo.zabbix.com/zabbix/3.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_3.0-1+xenial_all.deb"
+sudo dpkg -i zabbix-release_3.0-1+xenial_all.deb
+sudo apt-get update
+sudo apt-get install zabbix-server-pgsql zabbix-frontend-php libapache2-mod-php php-bcmath php-mbstring php7.0-xml php-pgsql
+# Zabbix can't work without password (with ident), so you need to create user with password:
+sudo -u postgres createuser --no-superuser --pwprompt zabbix
+sudo -u postgres createdb zabbix --owner=zabbix
+# Get link to fresh sources here: http://www.zabbix.com/download.php
+wget "https://sourceforge.net/projects/zabbix/files/ZABBIX%20Latest%20Stable/3.0.5/zabbix-3.0.5.tar.gz"
+tar -xzpf zabbix-3.0.5.tar.gz
+sudo -u zabbix psql zabbix < zabbix-3.0.5/database/postgresql/schema.sql
+sudo -u zabbix psql zabbix < zabbix-3.0.5/database/postgresql/images.sql
+sudo -u zabbix psql zabbix < zabbix-3.0.5/database/postgresql/data.sql
+# Set DBPassword
+sudo editor /etc/zabbix/zabbix_server.conf
+sudo service zabbix-server restart
+sudo systemctl enable zabbix-server
+sudo sed -i s/mod_php5.c/mod_php7.c/ /etc/zabbix/apache.conf
+# Take list from http://php.net/manual/en/timezones.php
+sudo sed -i 's/\;date\.timezone\ =/date.timezone\ =\ Asia\/Yekaterinburg/' /etc/php/7.0/apache2/php.ini
+sudo service apache2 restart
+# If you use Nginx as proxy, add this to Nginx config:
+# proxy_buffer_size   128k;
+# proxy_buffers   4 256k;
+# proxy_busy_buffers_size   256k;
